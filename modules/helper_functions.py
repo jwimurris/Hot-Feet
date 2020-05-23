@@ -22,34 +22,44 @@ def collide(obj1, obj2):
 	return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) != None
 
 def redraw_window(tiles, players, cursor, lost, paused, board): 
-		WIN.blit(BACKGROUND, (0,0)) #first draw background as 1st layer --> With BLIT you can draw SOURCE is picture, dest = coordinates
-		# player.draw(WIN)
+	"""
+	This function draws/refreshes the window
+	"""
+	WIN.blit(BACKGROUND, (0,0)) #first draw background as 1st layer --> With BLIT you can draw SOURCE is picture, dest = coordinates
+	# player.draw(WIN)
 
-		#drawing tiles
-		for tile in tiles: 
-			tile.draw(WIN)
-		
-		for player in players: 
-			player.draw(WIN)
-			player.show_range(cursor, WIN, tiles, board)
+	#drawing tiles
+	for tile in tiles: 
+		tile.draw(WIN)
+	
+	for player in players: 
+		player.draw(WIN)
+		player.show_range(cursor, WIN, tiles, board)
 
-		cursor.draw(WIN)
+	cursor.draw(WIN)
 
-		if lost: 
-			lost_label = LOST_FONT.render("You lost!!", 1, (255,255,255))
-			WIN.blit(lost_label, ((WIDTH/2-lost_label.get_width()/2),HEIGHT/2))
+	if lost: 
+		lost_label = LOST_FONT.render("You lost!!", 1, (255,255,255))
+		WIN.blit(lost_label, ((WIDTH/2-lost_label.get_width()/2),HEIGHT/2))
 
-		if paused: 
-			paused_label = LOST_FONT.render("Game Paused (press 'p' to unpause)", 1, (255,255,255))
-			WIN.blit(paused_label, ((WIDTH/2-paused_label.get_width()/2),HEIGHT/2))
+	if paused: 
+		paused_label = LOST_FONT.render("Game Paused (press 'p' to unpause)", 1, (255,255,255))
+		WIN.blit(paused_label, ((WIDTH/2-paused_label.get_width()/2),HEIGHT/2))
 
-		pygame.display.update() #refreshing display
+	pygame.display.update() #refreshing display
 
 
 def vec2int(v):
+	"""
+	some objects like sets or dictionaries don't accept vectors (unhashable). 
+	So these vector needs to be converted to tuple with integers (x, y)
+	"""
 	return (int(v.x), int(v.y))
 
-def tuple2vec(tup): 
+def tuple2vec(tup):
+	"""
+	This function is the opposite of vec2int and changes tuple coordinates back to vectors. 
+	""" 
 	return vec(tup[0], tup[1])
 
 
@@ -85,13 +95,21 @@ def breadth_first_search(board, start, end):
 
 
 def draw_path(window, path):
+	"""
+	This function draws the path the player can move
+
+	Takes:
+
+	:window: the window to draw arrows in
+	:path: the shortest path to destination --> the path to draw arrows on:
+	"""
 	for index in range(len(path)): 
 		if index == 0: 
 			pass
 		else: 
 			previous = path[index-1]
 			current = path[index]
-			direction = current-previous
+			direction = current-previous # the direction vector of the arrows
 			x = current.x * STEPSIZE + STEPSIZE / 2
 			y = current.y * STEPSIZE + STEPSIZE / 2
 			img = ARROWS[vec2int(direction)]
@@ -101,9 +119,13 @@ def draw_path(window, path):
 
 def check4hotfeet(player, players, tiles, player_turn_count): 
 	"""
+	Function that checks whether player has hotfeet and save this state in player. If next turn 
+	this is not fixed, player dies and is removed from player list. 
+
+	hotfeet = when player is not in contact with any tile
 	"""
-	if player_turn_count != player.turn_count: 
-		player.turn_count = player_turn_count
+	if player_turn_count != player.turn_count: #if new turn, check for hotfeet, else do nothing
+		player.turn_count = player_turn_count #saving current count in player
 		tiles_in_contact = []
 		for tile in tiles: 
 			if player.contact(tile):

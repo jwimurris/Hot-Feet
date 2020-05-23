@@ -6,7 +6,9 @@ import queue
 vec = pygame.math.Vector2
 
 class Cursor: 
-	
+	"""
+	This object is the cursor the player moves arround. T
+	"""
 	def __init__(self, x, y): 
 		self.x, self.y = x, y
 		self.img = None
@@ -15,6 +17,9 @@ class Cursor:
 		self.mask = pygame.mask.from_surface(self.cursor)
 
 	def interact(self, count, board, range_of_positions = False): 
+		"""
+		With this function the player can move the cursor arround
+		"""
 		direction = None
 		keys = pygame.key.get_pressed()
 		if count % 3 == 0:
@@ -32,18 +37,21 @@ class Cursor:
 				self.move(direction, board, range_of_positions)
 
 	def move(self, direction, board, range_of_positions):
-			if direction:
-				movement = direction*STEPSIZE
-				goal = vec(self.x+movement.x, self.y+movement.y)//STEPSIZE
-				if board.in_bounds(goal):
-					if range_of_positions: 
-						range_of_positions = [tuple2vec((htile.x, htile.y))//STEPSIZE for htile in range_of_positions]
-						if board.passable(goal) and goal in range_of_positions: 
-							self.x += movement.x
-							self.y += movement.y
-					else: 
+		"""
+		Actually moving the cursor arround after passing some checks. 
+		"""
+		if direction: 
+			movement = direction*STEPSIZE
+			goal = vec(self.x+movement.x, self.y+movement.y)//STEPSIZE
+			if board.in_bounds(goal):
+				if range_of_positions: #this is only filled if player is trying to move the player or attack, instead of moving the cursor 
+					range_of_positions = [tuple2vec((htile.x, htile.y))//STEPSIZE for htile in range_of_positions]
+					if board.passable(goal) and goal in range_of_positions: 
 						self.x += movement.x
 						self.y += movement.y
+				else: 
+					self.x += movement.x
+					self.y += movement.y
 	
 	def draw(self, window): 
 		window.blit(self.cursor, (self.x, self.y))
@@ -61,7 +69,9 @@ class Cursor:
 
 
 class HighlightedTile: 
-
+	"""
+	This object generates squares with an alpha of 0.5. Can be used for highlighting tiles 
+	"""
 	def __init__(self, x, y, above = True): 
 		self.x, self.y = x, y
 		self.step = pygame.Surface((STEPSIZE, STEPSIZE), pygame.SRCALPHA)

@@ -134,7 +134,7 @@ def main():
 						player.action_points = 4
 						for tile in tiles: 
 							if player.contact(tile):
-								tile.health -= 1 #damage tile on turn end if player on tile
+								tile.damage(1) #damage tile on turn end if player on tile
 								player.hotfeet = False	#player contacts tile on turn end, so not hotfeet
 						if player.player == last_player_name: #if last player turn ended, update player count
 							player_count = len(players) 
