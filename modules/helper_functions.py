@@ -69,7 +69,6 @@ def breadth_first_search(board, start, end):
 	paths.put(current_path) #puts current path in queue
 	if end in current_path: 
 		return current_path
-
 	search_board = True
 	while search_board:
 		current_path = paths.get()

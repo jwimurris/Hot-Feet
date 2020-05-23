@@ -92,7 +92,7 @@ def generate_posible_coordinates(player, tiles, board):
 	"""
 	:returns a list of possible positions
 	""" 
-	range_of_positions = [] 
+	range_of_positions = [HighlightedTile(player.x, player.y)] #making sure the starting tile is always present.. otherwise there is no limit and player can move out of bounds
 	start = tuple2vec((player.x, player.y))//STEPSIZE
 	ap = player.action_points
 	max_range = bfs_range(board, start, ap)
@@ -120,7 +120,7 @@ def bfs_range(board, start, ap):
 	possible_paths = queue.Queue()
 	current_path = [start] #path is always a list
 	possible_paths.put(current_path) #puts current path in queue
-	search_board = True
+
 	if ap > 0: 
 		while possible_paths.qsize()>0:
 			current_path = possible_paths.get()

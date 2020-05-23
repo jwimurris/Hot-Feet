@@ -152,8 +152,8 @@ class Interact:
 		"""
 		run = True
 		index = 0
-		options = ["Move", "Attack", "Show Cards", "Back"]
-		screen = pygame.Surface((STEPSIZE*4, STEPSIZE*2.5), pygame.SRCALPHA)   # per-pixel alpha
+		options = ["Move", "Attack", "Show Cards", "End turn", "Back"]
+		screen = pygame.Surface((STEPSIZE*4, STEPSIZE*3), pygame.SRCALPHA)   # per-pixel alpha
 		screen.fill((250,255,200,128)) 
 		x, y = self.get_visual_xy(screen)
 		info = f"{self.player.capitalize()}                   AP = {self.action_points}"
@@ -187,6 +187,9 @@ class Interact:
 							choice = self.attack(tiles, players, lost, paused, board)
 							if choice: 
 								run = False
+						elif selected_option == "End turn": 
+							self.action_points = 0
+							run = False
 					if event.key == pygame.K_UP: #incrementing the index based on key presses
 						index -=1
 					if event.key == pygame.K_DOWN: 
@@ -244,13 +247,14 @@ class Interact:
 			cursor.draw(WIN)
 			cursor.interact(count, board, range_of_positions)
 			current_cursor_pos = vec(cursor.x, cursor.y) // STEPSIZE
-			if prev_cursor_pos != current_cursor_pos: 
+			#searching board for shortest path
+			if prev_cursor_pos != current_cursor_pos and len(range_of_positions)>1: 
 				goal = current_cursor_pos
 				start = vec(self.x, self.y) // STEPSIZE
 				path = breadth_first_search(board, start, goal)
 				distance = len(path)-1
 				prev_cursor_pos = current_cursor_pos
-			
+			#handling player input
 			for event in pygame.event.get(): 
 				if event.type == KEYDOWN:
 					if event.key == pygame.K_SPACE:
