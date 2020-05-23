@@ -1,8 +1,10 @@
 import os
 import pygame
-from game_presets import WIDTH, HEIGHT, TILE_XY_COUNT, STEPSIZE, MENU_FONT, BACKGROUND, WIN, MAIN_FONT, LOST_FONT
+from game_presets import WIDTH, HEIGHT, TILE_XY_COUNT, STEPSIZE, MENU_FONT, BACKGROUND, WIN, MAIN_FONT, LOST_FONT, ARROWS
 from pygame.locals import KEYDOWN
-
+from collections import deque
+import queue
+vec = pygame.math.Vector2
 
 def load_img(imgname, modifier = 1):
 	"""When modifier increases, the size of the image decreases"""
@@ -19,7 +21,7 @@ def collide(obj1, obj2):
 	offset_y = int(obj2.y - obj1.y)
 	return obj1.mask.overlap(obj2.mask, (offset_x, offset_y)) != None
 
-def redraw_window(tiles, players, cursor, lost, paused): 
+def redraw_window(tiles, players, cursor, lost, paused, board): 
 		WIN.blit(BACKGROUND, (0,0)) #first draw background as 1st layer --> With BLIT you can draw SOURCE is picture, dest = coordinates
 		# player.draw(WIN)
 
@@ -29,7 +31,7 @@ def redraw_window(tiles, players, cursor, lost, paused):
 		
 		for player in players: 
 			player.draw(WIN)
-			player.show_range(cursor, WIN, tiles)
+			player.show_range(cursor, WIN, tiles, board)
 
 		cursor.draw(WIN)
 
@@ -44,68 +46,58 @@ def redraw_window(tiles, players, cursor, lost, paused):
 		pygame.display.update() #refreshing display
 
 
-# def generate_menu(obj, window): 
-# 	run = True
-# 	index = 0
-# 	options = ["Move", "Attack", "Range", "Back"]
-# 	screen = pygame.Surface((STEPSIZE*4, STEPSIZE*2.5), pygame.SRCALPHA)   # per-pixel alpha
-# 	screen.fill((250,255,200,128)) 
-# 	x, y = get_visual_xy(obj, screen)
-# 	info = f"{obj.player.capitalize()}                   AP = {obj.action_points}"
-# 	info_label = MENU_FONT.render(info,1, (155,80,255))
-# 	print("in player menu")
-# 	while run: 
-# 		selected_option = options[index]
-# 		window.blit(screen, (x, y))
-# 		window.blit(info_label, (x+10, y+5))
-# 		line_spacing = 5+info_label.get_height()*2
-# 		for opt in options: 
-# 			if opt == selected_option: #highlighting the selected option
-# 				opt_label = MENU_FONT.render(opt, 1, (60,50,255))
-# 			else:
-# 				opt_label = MENU_FONT.render(opt, 1, (255,50,60))
-# 			window.blit(opt_label, (x+10, y + line_spacing))
-# 			line_spacing += opt_label.get_height()+10
+def vec2int(v):
+	return (int(v.x), int(v.y))
+
+def tuple2vec(tup): 
+	return vec(tup[0], tup[1])
 
 
-# 		#handeling player pause or quet input:
-# 		for event in pygame.event.get(): 
-# 			if event.type == KEYDOWN:
-# 				if event.key == pygame.K_SPACE:
-# 					print("leaving player menu") 
-# 					run = False
-# 				if event.key == pygame.K_UP: #incrementing the index based on key presses
-# 					index -=1
-# 				if event.key == pygame.K_DOWN: 
-# 					index +=1
+def breadth_first_search(board, start, end):
+	"""
+	BFS path finding algorithim : finds the shortest path
 
-# 		#setting the index to the boundaries of the option list
-# 		if index >= len(options): 
-# 			index = len(options)-1
-# 		elif index < 0: 
-# 			index = 0
-# 		pygame.display.update() #refreshing display
+	arguments: 
+	:board: gameboard == grid
+	:start: position from which the algorithm starts finding new positions
+	:end: end position, if reached stop
 
-# def get_visual_xy(obj, visual): 
-# 	"""
-# 	This function returns the xy positions to blit the visual. The position is determined
-# 	by the position of the object (player mostly) and how much space is left on the screen 
-# 	in relation to the object position. 
-# 	:obj: the object which xy coordinates are used. 
-# 	:visual: the visual to display 
+	:returns: a list that contains the path from start to end in vector coordinates
+	"""
+	paths = queue.Queue()
+	current_path = [start] #path is always a list
+	paths.put(current_path) #puts current path in queue
+	if end in current_path: 
+		return current_path
 
-# 	:returns xy coordinates 
-# 	"""
-# 	if obj.x + STEPSIZE + visual.get_width() < WIDTH:
-# 		x = obj.x + STEPSIZE 
-# 	else: 
-# 		x = obj.x - STEPSIZE - visual.get_width()
-# 	if obj.y - visual.get_height() > 0: 
-# 		y = obj.y - visual.get_height()
-# 	else: 
-# 		y = obj.y + STEPSIZE
-# 	return x, y
+	search_board = True
+	while search_board:
+		current_path = paths.get()
+		last_tile = current_path[-1]
+		for next_tile in board.find_neighbors(last_tile):
+			if next_tile not in current_path: 
+				new_path = current_path + [next_tile]
+				if end in new_path or end == next_tile: 
+					search_board = False
+					return new_path
+				else: 
+					paths.put(new_path)
 
+
+
+def draw_path(window, path):
+	for index in range(len(path)): 
+		if index == 0: 
+			pass
+		else: 
+			previous = path[index-1]
+			current = path[index]
+			direction = current-previous
+			x = current.x * STEPSIZE + STEPSIZE / 2
+			y = current.y * STEPSIZE + STEPSIZE / 2
+			img = ARROWS[vec2int(direction)]
+			r = img.get_rect(center=(x, y))
+			window.blit(img, r)
 
 
 

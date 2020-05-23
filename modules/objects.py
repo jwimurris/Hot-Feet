@@ -3,10 +3,12 @@ import os
 # import sys
 # sys.path.append(os.path.join("..","..", "hotfeet"))
 from game_presets import WIN, WIDTH, HEIGHT, TILE_XY_COUNT, STEPSIZE, TILE_FONT, PLAYER_FONT, MENU_FONT, BACKGROUND
-from helper_functions import load_img, collide, redraw_window
+from helper_functions import load_img, collide, redraw_window, draw_path, breadth_first_search, vec2int
 from pygame.locals import KEYDOWN
 import math
 from controls import Cursor, generate_posible_coordinates
+vec = pygame.math.Vector2
+import heapq
 
 
 #loading tile images
@@ -28,6 +30,82 @@ PLAYER4 = load_img("knight.png")#, modifier=1.3)
 
 pygame.font.init()
 
+
+class SquareGrid:
+	def __init__(self, width, height):
+		self.width = width
+		self.height = height
+		self.blocked = [] #blocked = unavailable for movement
+		self.connections = [vec(1, 0), vec(-1, 0), vec(0, 1), vec(0, -1)]
+		# comment/uncomment this for diagonals:
+		# self.connections += [vec(1, 1), vec(-1, 1), vec(1, -1), vec(-1, -1)]
+
+	def in_bounds(self, node):
+		return 0 <= node.x < self.width and 0 <= node.y < self.height
+
+	def passable(self, node):
+		return node not in self.blocked
+
+	def find_neighbors(self, node):
+		neighbors = [node + connection for connection in self.connections]
+		# don't use this for diagonals:
+		# if (node.x + node.y) % 2:
+		#     neighbors.reverse()
+		neighbors = filter(self.in_bounds, neighbors)
+		neighbors = filter(self.passable, neighbors)
+		return neighbors
+
+	# def draw(self):
+	#     for blockade in self.blocked:
+	#         rect = pg.Rect(blockade * TILESIZE, (TILESIZE, TILESIZE))
+	#         pg.draw.rect(WIN, LIGHTGRAY, rect)
+
+# class WeightedGrid(SquareGrid):
+# 	def __init__(self, width, height):
+# 		super().__init__(width, height)
+# 		self.weights = {}
+
+# 	def cost(self, from_node, to_node):
+# 		if (vec(to_node) - vec(from_node)).length_squared() == 1:
+# 			return self.weights.get(to_node, 0) + 10
+# 		else:
+# 			return self.weights.get(to_node, 0) + 14
+
+
+# class PriorityQueue:
+# 	def __init__(self):
+# 		self.nodes = []
+
+# 	def put(self, node, cost):
+# 		heapq.heappush(self.nodes, (cost, node))
+
+# 	def get(self):
+# 		return heapq.heappop(self.nodes)[1]
+
+# 	def empty(self):
+# 		return len(self.nodes) == 0
+
+# def dijkstra_search(graph, start, end):
+# 	frontier = PriorityQueue()
+# 	frontier.put(vec2int(start), 0)
+# 	path = {}
+# 	cost = {}
+# 	path[vec2int(start)] = None
+# 	cost[vec2int(start)] = 0
+
+# 	while not frontier.empty():
+# 		current = frontier.get()
+# 		if current == end:
+# 			break
+# 		for next in graph.find_neighbors(vec(current)):
+# 			next = vec2int(next)
+# 			next_cost = cost[current] + graph.cost(current, next)
+# 			if next not in cost or next_cost < cost[next]:
+# 				cost[next] = next_cost
+# 				priority = next_cost
+# 				frontier.put(next, priority)
+# 				path[next] = vec(current) - vec(next)
+# 	return path
 
 class Tile:
 	"""docstring for Tiles"""
@@ -68,7 +146,7 @@ class Interact:
 	"""
 	This class defines how the player can interact with its avatar and world
 	"""
-	def generate_menu(self, window, tiles, players, lost, paused): 
+	def generate_menu(self, window, tiles, players, lost, paused, board): 
 		"""
 		This function generates a menu from which the player can choose a few actions. 
 		"""
@@ -102,11 +180,11 @@ class Interact:
 							print("leaving player menu") 
 							run = False
 						elif selected_option == "Move": 
-							choice = self.choose_path(tiles, players, lost, paused)
+							choice = self.choose_path(tiles, players, lost, paused, board)
 							if choice: 
 								run = False
 						elif selected_option == "Attack": 
-							choice = self.attack(tiles, players, lost, paused)
+							choice = self.attack(tiles, players, lost, paused, board)
 							if choice: 
 								run = False
 					if event.key == pygame.K_UP: #incrementing the index based on key presses
@@ -143,32 +221,46 @@ class Interact:
 			y = self.y + STEPSIZE
 		return x, y
 
-	def show_range(self, cursor, window, tiles, range_of_positions=None, active = False, ): 
+	def show_range(self, cursor, window, tiles, board, range_of_positions=None, active = False): 
 		"""
 		Draws the range of the player
 
 		"""
 		if cursor.contact(self) or active: 
 			if not range_of_positions: 
-				range_of_positions = generate_posible_coordinates(self, tiles)
+				range_of_positions = generate_posible_coordinates(self, tiles, board)
 			for pos in range_of_positions: 
 				pos.draw(window)
 
-	def choose_path(self, tiles, players, lost, paused): 
+	def choose_path(self, tiles, players, lost, paused, board): 
 		run = True
 		cursor = Cursor(self.x, self.y)
 		count = 0
 		choice = False
-		range_of_positions = generate_posible_coordinates(self, tiles)
+		path = None
+		range_of_positions = generate_posible_coordinates(self, tiles, board)
+		prev_cursor_pos = vec(self.x, self.y) // STEPSIZE
 		while run == True and self.action_points > 0: 
 			cursor.draw(WIN)
-			cursor.interact(count, tiles, players, limit2tiles = True)
+			cursor.interact(count, board, limit2tiles = True)
+			current_cursor_pos = vec(cursor.x, cursor.y) // STEPSIZE
+			if prev_cursor_pos != current_cursor_pos: 
+				goal = current_cursor_pos
+				start = vec(self.x, self.y) // STEPSIZE
+				path = breadth_first_search(board, start, goal)
+				distance = len(path)-1
+				prev_cursor_pos = current_cursor_pos
+			
 			for event in pygame.event.get(): 
 				if event.type == KEYDOWN:
 					if event.key == pygame.K_SPACE:
 						if len([player for player in players if cursor.contact(player)]) == 0:
+							old_pos = vec(self.x, self.y) // STEPSIZE
+							board.blocked.remove(old_pos)
 							self.x, self.y = cursor.x, cursor.y
-							self.action_points -= 1
+							new_pos = vec(self.x, self.y) // STEPSIZE
+							board.blocked.append(new_pos)
+							self.action_points -= distance
 							run = False
 							choice = True
 						else: 
@@ -176,8 +268,10 @@ class Interact:
 					if event.key == pygame.K_ESCAPE: 
 						run = False
 			count += 1
-			redraw_window(tiles, players, cursor, lost, paused) 
-			self.show_range(cursor, WIN, tiles, range_of_positions, active = True)
+			redraw_window(tiles, players, cursor, lost, paused, board)
+			if path:  
+				draw_path(WIN, path)
+			self.show_range(cursor, WIN, tiles, board, range_of_positions, active = True)
 			pygame.display.update()
 		return choice
 
@@ -218,7 +312,7 @@ class Player(Interact):
 				self.action_points -= 1
 				self.check_turn()
 
-	def attack(self, tiles, players, lost, paused, amount = 1):
+	def attack(self, tiles, players, lost, paused, board, amount = 1):
 		run = True
 		cursor = Cursor(self.x, self.y)
 		count = 0
@@ -226,7 +320,7 @@ class Player(Interact):
 		range_of_positions = generate_posible_coordinates(self, tiles)
 		while run == True and self.action_points > 0: 
 			cursor.draw(WIN)
-			cursor.interact(count, tiles, players, limit2tiles = True)
+			cursor.interact(count, board, limit2tiles = True)
 			for event in pygame.event.get(): 
 				if event.type == KEYDOWN:
 					if event.key == pygame.K_SPACE:
@@ -242,7 +336,7 @@ class Player(Interact):
 					if event.key == pygame.K_ESCAPE: 
 						run = False
 			count += 1
-			redraw_window(tiles, players, cursor, lost, paused) 
+			redraw_window(tiles, players, cursor, lost, paused, board) 
 			self.show_range(cursor, WIN, tiles, range_of_positions, active = True)
 			pygame.display.update()
 		return choice
@@ -273,13 +367,13 @@ class Player(Interact):
 	def get_height(self): 
 		return self.img.get_height()
 
-	def menu(self, cursor, window, tiles, players, lost, paused): 
+	def menu(self, cursor, window, tiles, players, lost, paused, board): 
 		if cursor.contact(self) and self.active: 
 			for event in pygame.event.get(): 
 				if event.type == KEYDOWN:
 					if event.key == pygame.K_SPACE:
 						print("menu")
-						self.generate_menu(window, tiles, players, lost, paused)
+						self.generate_menu(window, tiles, players, lost, paused, board)
 
 	def contact(self, obj): 
 		return collide(self, obj)
