@@ -100,4 +100,27 @@ def draw_path(window, path):
 			window.blit(img, r)
 
 
+def check4hotfeet(player, players, tiles, player_turn_count, player_turn): 
+	"""
+	"""
+	if player_turn_count != player.turn_count: 
+		player.turn_count = player_turn_count
+		tiles_in_contact = []
+		for tile in tiles: 
+			if player.contact(tile):
+				tiles_in_contact.append(tile)
+		if len(tiles_in_contact) == 0:
+			if player.hotfeet: 
+				print(f"{player.player} lost!")
+				player.active = False
+				players.remove(player)
+				# return player_turn_count+1, player_turn+1
+			else: 
+				print(f"{player.player} has hotfeet!")
+				player.hotfeet = True
+		else: 
+			player.hotfeet = False
+	return player_turn_count, player_turn
+
+
 

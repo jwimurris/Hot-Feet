@@ -9,7 +9,7 @@ sys.path.append(os.path.join("modules"))
 from modules.game_presets import WIN, WIDTH, HEIGHT, TILE_XY_COUNT, STARTING_BOARD, STEPSIZE, BACKGROUND
 from modules.objects import Tile, Player, SquareGrid, vec#, WeightedGrid
 from modules.controls import Cursor
-from modules.helper_functions import redraw_window
+from modules.helper_functions import redraw_window, check4hotfeet
  
 
 
@@ -65,6 +65,8 @@ def main():
 		players.append(Player(player_start_positions[player], player))
 		board.blocked.append(vec(player_start_positions[player])//STEPSIZE)
 
+	player_count = len(players)
+
 	while run: 
 		clock.tick(FPS) #makes sure the game runs at the frames set by FPS
 		if not pygame.mixer.music.get_busy():
@@ -113,11 +115,12 @@ def main():
 			# if keys[pygame.K_SPACE]: 
 			# 	player.shoot()
 
-			player_turn = player_turn_count % len(players) + 1
+			player_turn = player_turn_count % player_count
 			for player in players: 
-				player.menu(cursor, WIN, tiles, players, lost, paused, board)
-				if player.player == f"player {player_turn}": 
+				if player.player == players[player_turn].player: 
 					player.active = True
+					player_turn_count, player_turn = check4hotfeet(player, players, tiles, player_turn_count, player_turn)
+					player.menu(cursor, WIN, tiles, players, lost, paused, board)
 					if player.action_points <= 0: 
 						player_turn_count += 1
 						player.active = False
@@ -125,6 +128,12 @@ def main():
 						for tile in tiles: 
 							if player.contact(tile):
 								tile.health -= 1
+								player.hotfeet = False	
+						if player.player == players[len(players)-1].player: 
+							player_count = len(players)
+						
+
+
 
 			pygame.display.set_caption(f"Hotfeet, running at: {int(clock.get_fps())} fps") #Setting the name of the window
 			

@@ -289,13 +289,15 @@ class Player(Interact):
 	}
 	__name__ = "Player"
 
-	def __init__(self, start_position, player): 
+	def __init__(self, start_position, player, turn_count = 0, hotfeet=False): 
 		self.x, self.y = start_position 
 		self.player = player
 		self.active = False
 		self.action_points = 4
 		self.img = self.PLAYER2IMG[self.player]
 		self.mask = pygame.mask.from_surface(self.img)
+		self.hotfeet = hotfeet
+		self.turn_count = turn_count
 
 	def move(self, path2destination = []): 
 		"""path should be an iterable containing the directions the player should move"""
@@ -318,9 +320,17 @@ class Player(Interact):
 		count = 0
 		choice = False
 		range_of_positions = generate_posible_coordinates(self, tiles, board)
+		prev_cursor_pos = vec(self.x, self.y) // STEPSIZE
 		while run == True and self.action_points > 0: 
 			cursor.draw(WIN)
 			cursor.interact(count, board, range_of_positions)
+			current_cursor_pos = vec(cursor.x, cursor.y) // STEPSIZE
+			if prev_cursor_pos != current_cursor_pos: 
+				goal = current_cursor_pos
+				start = vec(self.x, self.y) // STEPSIZE
+				path = breadth_first_search(board, start, goal)
+				distance = len(path)-1
+				prev_cursor_pos = current_cursor_pos
 			for event in pygame.event.get(): 
 				if event.type == KEYDOWN:
 					if event.key == pygame.K_SPACE:
@@ -328,7 +338,7 @@ class Player(Interact):
 							if cursor.contact(tile): 
 								if len([player for player in players if cursor.contact(player)]) == 0:
 									tile.damage(amount)
-									self.action_points -= amount
+									self.action_points -= distance*amount
 									run = False
 									choice = True
 								else: 
