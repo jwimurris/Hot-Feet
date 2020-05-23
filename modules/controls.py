@@ -14,31 +14,31 @@ class Cursor:
 		self.cursor.fill((200,255,200,128))                         # notice the alpha value in the color
 		self.mask = pygame.mask.from_surface(self.cursor)
 
-	def interact(self, count, board, limit2tiles = False): 
+	def interact(self, count, board, range_of_positions = False): 
 		direction = None
-		# back = "left"
 		keys = pygame.key.get_pressed()
 		if count % 3 == 0:
 			if (keys[pygame.K_UP] or keys[pygame.K_w]):  #move up if not at limit of screen
 				direction = vec(0, -1)
-				self.move(direction,board, limit2tiles)
+				self.move(direction, board, range_of_positions)
 			if (keys[pygame.K_DOWN] or keys[pygame.K_s]):  
 				direction = vec(0, 1)
-				self.move(direction,board, limit2tiles)
+				self.move(direction, board, range_of_positions)
 			if (keys[pygame.K_LEFT] or keys[pygame.K_a]):  
 				direction = vec(-1, 0)
-				self.move(direction,board, limit2tiles)
+				self.move(direction, board, range_of_positions)
 			if (keys[pygame.K_RIGHT] or keys[pygame.K_d]):
 				direction = vec(1, 0)
-				self.move(direction,board, limit2tiles)
+				self.move(direction, board, range_of_positions)
 
-	def move(self, direction, board, limit2tiles):
+	def move(self, direction, board, range_of_positions):
 			if direction:
 				movement = direction*STEPSIZE
 				goal = vec(self.x+movement.x, self.y+movement.y)//STEPSIZE
 				if board.in_bounds(goal):
-					if limit2tiles: 
-						if board.passable(goal): 
+					if range_of_positions: 
+						range_of_positions = [tuple2vec((htile.x, htile.y))//STEPSIZE for htile in range_of_positions]
+						if board.passable(goal) and goal in range_of_positions: 
 							self.x += movement.x
 							self.y += movement.y
 					else: 

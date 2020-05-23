@@ -242,7 +242,7 @@ class Interact:
 		prev_cursor_pos = vec(self.x, self.y) // STEPSIZE
 		while run == True and self.action_points > 0: 
 			cursor.draw(WIN)
-			cursor.interact(count, board, limit2tiles = True)
+			cursor.interact(count, board, range_of_positions)
 			current_cursor_pos = vec(cursor.x, cursor.y) // STEPSIZE
 			if prev_cursor_pos != current_cursor_pos: 
 				goal = current_cursor_pos
@@ -317,10 +317,10 @@ class Player(Interact):
 		cursor = Cursor(self.x, self.y)
 		count = 0
 		choice = False
-		range_of_positions = generate_posible_coordinates(self, tiles)
+		range_of_positions = generate_posible_coordinates(self, tiles, board)
 		while run == True and self.action_points > 0: 
 			cursor.draw(WIN)
-			cursor.interact(count, board, limit2tiles = True)
+			cursor.interact(count, board, range_of_positions)
 			for event in pygame.event.get(): 
 				if event.type == KEYDOWN:
 					if event.key == pygame.K_SPACE:
@@ -337,7 +337,7 @@ class Player(Interact):
 						run = False
 			count += 1
 			redraw_window(tiles, players, cursor, lost, paused, board) 
-			self.show_range(cursor, WIN, tiles, range_of_positions, active = True)
+			self.show_range(cursor, WIN, tiles, board, range_of_positions, active = True)
 			pygame.display.update()
 		return choice
 
