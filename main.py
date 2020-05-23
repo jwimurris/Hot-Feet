@@ -116,21 +116,28 @@ def main():
 			# 	player.shoot()
 
 			player_turn = player_turn_count % player_count
+			last_player_name = players[-1].player
 			for player in players: 
-				if player.player == players[player_turn].player: 
-					player.active = True
-					player_turn_count, player_turn = check4hotfeet(player, players, tiles, player_turn_count, player_turn)
-					player.menu(cursor, WIN, tiles, players, lost, paused, board)
+				try: 
+					current_player = players[player_turn].player
+				except IndexError: 
+					player_count = len(players)
+					player_turn = player_turn_count % player_count
+					current_player = players[player_turn].player
+				if player.player == current_player: 
+					player.active = True #when True, player is allowed to move and colors player name
+					check4hotfeet(player, players, tiles, player_turn_count) #checks whether player has hotfeet
+					player.menu(cursor, WIN, tiles, players, lost, paused, board) #checking whether player tries to start menu
 					if player.action_points <= 0: 
 						player_turn_count += 1
 						player.active = False
 						player.action_points = 4
 						for tile in tiles: 
 							if player.contact(tile):
-								tile.health -= 1
-								player.hotfeet = False	
-						if player.player == players[len(players)-1].player: 
-							player_count = len(players)
+								tile.health -= 1 #damage tile on turn end if player on tile
+								player.hotfeet = False	#player contacts tile on turn end, so not hotfeet
+						if player.player == last_player_name: #if last player turn ended, update player count
+							player_count = len(players) 
 						
 
 
